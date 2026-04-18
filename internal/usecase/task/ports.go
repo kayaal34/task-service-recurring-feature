@@ -2,7 +2,7 @@ package task
 
 import (
 	"context"
-
+    "time"
 	taskdomain "example.com/taskservice/internal/domain/task"
 )
 
@@ -23,13 +23,21 @@ type Usecase interface {
 }
 
 type CreateInput struct {
-	Title       string
-	Description string
-	Status      taskdomain.Status
+	Title            string
+	Description      string
+	Status           taskdomain.Status
+	ScheduledAt      *time.Time
+	ParentID         *int64
+	RecurrenceType   *string
+	RecurrenceParams *string
 }
 
 type UpdateInput struct {
-	Title       string
-	Description string
-	Status      taskdomain.Status
+	Title            string
+	Description      string
+	Status           taskdomain.Status
+	ScheduledAt      *time.Time
+	ParentID         *int64
+	RecurrenceType   *string
+	RecurrenceParams *string
 }

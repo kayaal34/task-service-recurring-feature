@@ -28,9 +28,13 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Ta
 	}
 
 	model := &taskdomain.Task{
-		Title:       normalized.Title,
-		Description: normalized.Description,
-		Status:      normalized.Status,
+		Title:            normalized.Title,
+		Description:      normalized.Description,
+		Status:           normalized.Status,
+		ScheduledAt:      normalized.ScheduledAt,
+		ParentID:         normalized.ParentID,
+		RecurrenceType:   normalized.RecurrenceType,
+		RecurrenceParams: normalized.RecurrenceParams,
 	}
 	now := s.now()
 	model.CreatedAt = now
@@ -39,6 +43,12 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Ta
 	created, err := s.repo.Create(ctx, model)
 	if err != nil {
 		return nil, err
+	}
+
+	if created.RecurrenceType != nil {
+		if err := s.generateChildTasks(ctx, created); err != nil {
+			return nil, fmt.Errorf("failed to generate child tasks: %w", err)
+		}
 	}
 
 	return created, nil
@@ -63,11 +73,15 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*tas
 	}
 
 	model := &taskdomain.Task{
-		ID:          id,
-		Title:       normalized.Title,
-		Description: normalized.Description,
-		Status:      normalized.Status,
-		UpdatedAt:   s.now(),
+		ID:               id,
+		Title:            normalized.Title,
+		Description:      normalized.Description,
+		Status:           normalized.Status,
+		ScheduledAt:      normalized.ScheduledAt,
+		ParentID:         normalized.ParentID,
+		RecurrenceType:   normalized.RecurrenceType,
+		RecurrenceParams: normalized.RecurrenceParams,
+		UpdatedAt:        s.now(),
 	}
 
 	updated, err := s.repo.Update(ctx, model)
@@ -123,3 +137,66 @@ func validateUpdateInput(input UpdateInput) (UpdateInput, error) {
 
 	return input, nil
 }
+
+func (s *Service) generateChildTasks(ctx context.Context, parent *taskdomain.Task) error {
+	if parent.RecurrenceType == nil {
+		return nil
+	}
+
+	rtype := *parent.RecurrenceType
+	params := ""
+	if parent.RecurrenceParams != nil {
+		params = *parent.RecurrenceParams
+	}
+
+	now := s.now()
+	startDate := now
+	if parent.ScheduledAt != nil {
+		startDate = *parent.ScheduledAt
+	}
+
+	for i := 1; i <= 30; i++ {
+		date := startDate.AddDate(0, 0, i)
+		matched := false
+
+		switch rtype {
+		case "daily":
+			matched = true
+		case "monthly":
+			if date.Day() == startDate.Day() {
+				matched = true
+			}
+		case "even_odd":
+			isEven := date.Day()%2 == 0
+			if params == "even" && isEven {
+				matched = true
+			} else if params == "odd" && !isEven {
+				matched = true
+			}
+		case "exact_dates":
+			if strings.Contains(params, date.Format("2006-01-02")) {
+				matched = true
+			}
+		}
+
+		if matched {
+			scheduledTime := date
+			model := &taskdomain.Task{
+				Title:       parent.Title,
+				Description: parent.Description,
+				Status:      taskdomain.StatusNew,
+				ScheduledAt: &scheduledTime,
+				ParentID:    &parent.ID,
+				CreatedAt:   now,
+				UpdatedAt:   now,
+			}
+			_, err := s.repo.Create(ctx, model)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+

@@ -169,6 +169,20 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "new"
+          },
+          "scheduled_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "parent_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recurrence_type": {
+            "type": "string"
+          },
+          "recurrence_params": {
+            "type": "object"
           }
         }
       },
@@ -188,6 +202,20 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "in_progress"
+          },
+          "scheduled_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "parent_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recurrence_type": {
+            "type": "string"
+          },
+          "recurrence_params": {
+            "type": "object"
           }
         }
       },
@@ -204,6 +232,20 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "new"
+          },
+          "scheduled_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "parent_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "recurrence_type": {
+            "type": "string"
+          },
+          "recurrence_params": {
+            "type": "object"
           },
           "created_at": {
             "type": "string",
