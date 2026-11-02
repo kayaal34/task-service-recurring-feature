@@ -191,7 +191,13 @@ func (s *Service) generateChildTasks(ctx context.Context, parent *taskdomain.Tas
 		startDate = *parent.ScheduledAt
 	}
 
-	for i := 1; i <= 30; i++ {
+	// A monthly task can be 31 days away, so its window is one day longer.
+	horizon := 30
+	if rtype == "monthly" {
+		horizon = 31
+	}
+
+	for i := 1; i <= horizon; i++ {
 		date := startDate.AddDate(0, 0, i)
 		matched := false
 
