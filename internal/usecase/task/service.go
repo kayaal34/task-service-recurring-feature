@@ -120,6 +120,10 @@ func validateCreateInput(input CreateInput) (CreateInput, error) {
 		return CreateInput{}, fmt.Errorf("%w: invalid status", ErrInvalidInput)
 	}
 
+	if err := validateRecurrence(input.RecurrenceType, input.RecurrenceParams); err != nil {
+		return CreateInput{}, err
+	}
+
 	return input, nil
 }
 
@@ -135,7 +139,39 @@ func validateUpdateInput(input UpdateInput) (UpdateInput, error) {
 		return UpdateInput{}, fmt.Errorf("%w: invalid status", ErrInvalidInput)
 	}
 
+	if err := validateRecurrence(input.RecurrenceType, input.RecurrenceParams); err != nil {
+		return UpdateInput{}, err
+	}
+
 	return input, nil
+}
+
+func validateRecurrence(rtype, params *string) error {
+	if rtype == nil {
+		return nil
+	}
+
+	value := ""
+	if params != nil {
+		value = strings.TrimSpace(*params)
+	}
+
+	switch *rtype {
+	case "daily", "monthly":
+		return nil
+	case "even_odd":
+		if value != "even" && value != "odd" {
+			return fmt.Errorf("%w: recurrence params must be even or odd", ErrInvalidInput)
+		}
+		return nil
+	case "exact_dates":
+		if value == "" {
+			return fmt.Errorf("%w: recurrence params must list dates", ErrInvalidInput)
+		}
+		return nil
+	default:
+		return fmt.Errorf("%w: invalid recurrence type", ErrInvalidInput)
+	}
 }
 
 func (s *Service) generateChildTasks(ctx context.Context, parent *taskdomain.Task) error {
